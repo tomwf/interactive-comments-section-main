@@ -3,6 +3,7 @@ import { useState } from 'react'
 import AddComment from './AddComment'
 
 const Card = ({
+  parentId,
   id,
   content,
   date,
@@ -39,17 +40,17 @@ const Card = ({
         </div>
         <p className='col-span-full sm:col-start-2 sm:col-end-4 sm:row-start-2 sm:row-end-3 py-5 text-grayishBlue'>{content}</p>
         <div className='sm:col-start-1 sm:col-end-2 sm:row-start-1 sm:row-end-3 flex flex-row sm:flex-col self-start justify-self-start sm:w-11 bg-lightGray rounded-lg'>
-          <button className='grid place-content-center p-3' onClick={() => increaseScore(id)}>
+          <button className='grid place-content-center p-3' onClick={() => increaseScore(id, parentId)}>
             <img className='w-4 h-4 object-contain' src='./images/icon-plus.svg' alt='plus icon' />
           </button>
           <span className='p-3 text-moderateBlue font-bold text-center'>{score}</span>
-          <button className='grid place-content-center p-3' onClick={() => decreaseScore(id)}>
+          <button className='grid place-content-center p-3' onClick={() => decreaseScore(id, parentId)}>
             <img className='w-4 h-4 object-contain' src='./images/icon-minus.svg' alt='minus icon' />
           </button>
         </div>
         {name === 'juliusomo'
           ? <div className='flex gap-3'>
-            <button className='sm:col-start-3 sm:col-end-4 sm:row-start-1 sm:row-end-2 justify-self-end col-start-2 col-end-2 flex items-center gap-2.5 font-bold text-softRed' onClick={() => deleteCard(id)}>
+            <button className='sm:col-start-3 sm:col-end-4 sm:row-start-1 sm:row-end-2 justify-self-end col-start-2 col-end-2 flex items-center gap-2.5 font-bold text-softRed' onClick={() => deleteCard(id, parentId)}>
               <img src='./images/icon-delete.svg' alt='delete icon' />
               Delete
             </button>
@@ -65,7 +66,7 @@ const Card = ({
         }
       </div>
       <div>
-        {(reply || edit) && <AddComment setComment={setComment} handleSubmit={handleSubmit} />}
+        {(reply || edit) && <AddComment setComment={setComment} handleSubmit={handleSubmit} cardId={parentId ? parentId : id} />}
       </div>
     </>
   )

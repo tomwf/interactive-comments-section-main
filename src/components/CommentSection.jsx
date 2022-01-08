@@ -1,17 +1,43 @@
 import { useState, useEffect } from 'react'
+import { v4 as uuidv4 } from 'uuid';
 
 import Card from './Card'
-import Reply from './Reply'
 import AddComment from './AddComment'
 
 const CommentSection = () => {
   const [data, setData] = useState([])
   const [comment, setComment] = useState('')
+  const [reply, setReply] = useState(false)
+  const [edit, setEdit] = useState(false)
 
-  const deleteCard = async (id) => {
-    await fetch(`http://localhost:8000/comments/${id}`, {
-      method: 'DELETE',
-    })
+  const handleReply = () => {
+    setReply(!reply)
+    setEdit(false)
+  }
+
+  const handleEdit = () => {
+    setEdit(!edit)
+    setReply(false)
+  }
+
+
+  const deleteCard = async (id, parentId) => {
+    if (parentId) {
+      const parentComment = data.filter(item => item.id === parentId)
+      parentComment[0].replies = parentComment[0].replies.filter(item => item.id !== id)
+
+      await fetch(`http://localhost:8000/comments/${parentId}`, {
+        method: 'PUT',
+        body: JSON.stringify(parentComment[0]),
+        headers:  {
+          'Content-Type': 'application/json'
+        },
+      })
+    } else {
+      await fetch(`http://localhost:8000/comments/${id}`, {
+        method: 'DELETE',
+      })
+    }
     fetchData()
   }
 
@@ -29,32 +55,71 @@ const CommentSection = () => {
     fetchData()
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, cardId=null) => {
     e.preventDefault()
 
-    const newComment = {
-      content: comment,
-      createdAt: new Date().toISOString(),
-      score: 0,
-      replyingTo: "",
-      user: {
-        image: {
-          png:  "./images/avatars/image-juliusomo.png",
-          webp:  "./images/avatars/image-juliusomo.webp"
-        }
-        ,
-        username: "juliusomo"
-      },
-      replies: []
-    }
+    let newComment
 
-    await fetch('http://localhost:8000/comments', {
-      method: 'POST',
-      body: JSON.stringify(newComment),
-      headers:  {
-        'Content-Type': 'application/json'
-      },
-    })
+    // Exit function on empty comment
+    if (!comment) return
+
+    if (cardId) {
+      newComment = {
+        id: uuidv4(),
+        content: comment,
+        createdAt: new Date().toISOString().replace('T', ' ').replace('Z', ' '),
+        score: 0,
+        replyingTo: "",
+        user: {
+          image: {
+            png: "./images/avatars/image-juliusomo.png",
+            webp: "./images/avatars/image-juliusomo.webp"
+          }
+          ,
+          username: "juliusomo"
+        }
+      }
+
+      fetch(`http://localhost:8000/comments/${cardId}`)
+        .then(res => res.json())
+        .then(data => {
+          data.replies.push(newComment)
+
+          fetch(`http://localhost:8000/comments/${cardId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+            headers:  {
+              'Content-Type': 'application/json'
+            },
+          })
+        })
+    } else {
+      newComment = {
+        id: uuidv4(),
+        content: comment,
+        createdAt: new Date().toISOString(),
+        score: 0,
+        replyingTo: "",
+        user: {
+          image: {
+            png:  "./images/avatars/image-juliusomo.png",
+            webp:  "./images/avatars/image-juliusomo.webp"
+          }
+          ,
+          username: "juliusomo"
+        },
+        replies: []
+      }
+
+      await fetch('http://localhost:8000/comments', {
+        method: 'POST',
+        body: JSON.stringify(newComment),
+        headers:  {
+          'Content-Type': 'application/json'
+        },
+      })
+    }
+    setComment('')
     fetchData()
   }
 
@@ -153,7 +218,7 @@ const CommentSection = () => {
                 card.replies.length > 0 &&
                   <div className='ml-3 flex flex-col gap-3'>
                     {card.replies.map(reply => (
-                      <Reply
+                      <Card
                         key={reply.id}
                         parentId={card.id}
                         id={reply.id}
@@ -162,7 +227,7 @@ const CommentSection = () => {
                         score={reply.score}
                         image={reply.user.image}
                         name={reply.user.username}
-                        deleteReply={deleteReply}
+                        deleteCard={deleteCard}
                         increaseScore={increaseScore}
                         decreaseScore={decreaseScore}
                         setComment={setComment}
